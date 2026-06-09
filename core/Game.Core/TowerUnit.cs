@@ -15,6 +15,9 @@ namespace Game.Core
         /// <summary>범위 피해 타워인지(대포탑 등).</summary>
         public bool IsSplash => SplashRadius > 0f;
 
+        /// <summary>명중 시 거는 부가 효과(둔화/지속피해). 기본은 효과 없음.</summary>
+        public TowerEffect Effect { get; }
+
         /// <summary>업그레이드 레벨. 1부터 시작하며 Upgrade마다 1씩 오른다.</summary>
         public int Level { get; private set; } = 1;
 
@@ -23,7 +26,8 @@ namespace Game.Core
         /// <summary>쿨다운이 0 이하이면 발사 가능.</summary>
         public bool CanFire => cooldownRemaining <= 0f;
 
-        public TowerUnit(float range, float fireInterval, int damage, float splashRadius = 0f)
+        public TowerUnit(float range, float fireInterval, int damage, float splashRadius = 0f,
+            TowerEffect effect = default)
         {
             if (range <= 0f)
                 throw new ArgumentOutOfRangeException(nameof(range), "사거리는 0보다 커야 합니다.");
@@ -37,6 +41,7 @@ namespace Game.Core
             FireInterval = fireInterval;
             Damage = damage;
             SplashRadius = splashRadius;
+            Effect = effect;
             cooldownRemaining = 0f; // 시작 즉시 발사 가능
         }
 

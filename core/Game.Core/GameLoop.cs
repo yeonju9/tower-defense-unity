@@ -235,9 +235,39 @@ namespace Game.Core
             waveElapsed += deltaTime;
 
             SpawnDueEnemies();
+            TickEnemyStatus(deltaTime);     // 독 지속피해 적용·둔화 감소
+            CollectDeadAndReward();         // 독으로 죽은 적 정산
             MoveEnemiesAndCountLeaks(deltaTime);
             FireTowers(deltaTime);
             EvaluateEndConditions();
+        }
+
+        private List<TargetSelector.Candidate> BuildCandidates()
+        {
+            var candidates = new List<TargetSelector.Candidate>(enemies.Count);
+            foreach (var e in enemies)
+                candidates.Add(new TargetSelector.Candidate(e.Unit, e.Tracker.Position, e.Tracker.Progress));
+            return candidates;
+        }
+
+        private void TickEnemyStatus(float deltaTime)
+        {
+            foreach (var e in enemies)
+                e.Unit.TickStatus(deltaTime);
+        }
+
+        /// <summary>죽은 적에게 보상을 지급하고 목록에서 제거한다.</summary>
+        private void CollectDeadAndReward()
+        {
+            for (int i = enemies.Count - 1; i >= 0; i--)
+            {
+                if (enemies[i].Unit.IsDead)
+                {
+                    Economy.AddKillReward(enemies[i].Unit.GoldReward);
+                    KilledCount++;
+                    enemies.RemoveAt(i);
+                }
+            }
         }
 
         private void SpawnDueEnemies()
@@ -257,7 +287,7 @@ namespace Game.Core
             for (int i = enemies.Count - 1; i >= 0; i--)
             {
                 var e = enemies[i];
-                e.Tracker.Advance(e.Unit.Speed * deltaTime);
+                e.Tracker.Advance(e.Unit.EffectiveSpeed * deltaTime);
                 if (e.Tracker.ReachedEnd)
                 {
                     Life.LoseLife();
@@ -270,9 +300,7 @@ namespace Game.Core
         private void FireTowers(float deltaTime)
         {
             // 타깃 후보는 현재 살아있는 적들의 (본체, 위치, 진행도) 스냅샷.
-            var candidates = new List<TargetSelector.Candidate>(enemies.Count);
-            foreach (var e in enemies)
-                candidates.Add(new TargetSelector.Candidate(e.Unit, e.Tracker.Position, e.Tracker.Progress));
+            var candidates = BuildCandidates();
 
             foreach (var tower in towers)
             {
@@ -284,30 +312,24 @@ namespace Game.Core
                 if (picked == null)
                     continue;
 
-                if (tower.Unit.IsSplash)
+                // 단일 타깃이면 그 적만, 광역(대포탑)이면 착탄점 반경 내 모든 적이 피격 대상.
+                IReadOnlyList<EnemyUnit> hitUnits = tower.Unit.IsSplash
+                    ? splashResolver.Resolve(picked.Value.Position, tower.Unit.SplashRadius, candidates)
+                    : new[] { picked.Value.Unit };
+
+                var effect = tower.Unit.Effect;
+                foreach (var enemy in hitUnits)
                 {
-                    // 대포탑: 착탄점(타깃 위치) 반경 안의 모든 적에게 동일 피해.
-                    var affected = splashResolver.Resolve(picked.Value.Position, tower.Unit.SplashRadius, candidates);
-                    foreach (var enemy in affected)
-                        enemy.TakeDamage(tower.Unit.Damage);
-                }
-                else
-                {
-                    picked.Value.Unit.TakeDamage(tower.Unit.Damage);
+                    enemy.TakeDamage(tower.Unit.Damage);
+                    if (effect.AppliesSlow)
+                        enemy.ApplySlow(effect.SlowFactor, effect.SlowDuration);
+                    if (effect.AppliesPoison)
+                        enemy.ApplyPoison(effect.PoisonDps, effect.PoisonDuration);
                 }
                 tower.Unit.OnFired();
             }
 
-            // 이번 스텝에 죽은 적 정산(보상 지급 + 제거).
-            for (int i = enemies.Count - 1; i >= 0; i--)
-            {
-                if (enemies[i].Unit.IsDead)
-                {
-                    Economy.AddKillReward(enemies[i].Unit.GoldReward);
-                    KilledCount++;
-                    enemies.RemoveAt(i);
-                }
-            }
+            CollectDeadAndReward();
         }
 
         private void EvaluateEndConditions()
