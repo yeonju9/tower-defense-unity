@@ -1,0 +1,27 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    EditMode 단위 테스트(NUnit)를 Unity 없이 standalone으로 실행하기 위한 프로젝트.
+    Unity Test Framework도 NUnit 기반이므로, 여기서 작성한 테스트는 Unity로 거의 그대로 옮길 수 있다.
+  -->
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <LangVersion>9.0</LangVersion>
+    <Nullable>disable</Nullable>
+    <ImplicitUsings>disable</ImplicitUsings>
+    <IsPackable>false</IsPackable>
+    <RootNamespace>Game.Tests.EditMode</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- Unity Test Framework는 NUnit 3.x 기반이라, 이식성을 위해 3.x로 맞춘다(Assert.AreEqual 사용 가능). -->
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.11.1" />
+    <PackageReference Include="NUnit" Version="3.14.0" />
+    <PackageReference Include="NUnit3TestAdapter" Version="4.6.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Game.Core\Game.Core.csproj" />
+  </ItemGroup>
+
+</Project>

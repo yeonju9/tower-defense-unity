@@ -1,0 +1,16 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    Unity 6 LTS는 .NET Standard 2.1을 사용한다(tech-env.md).
+    이 라이브러리를 netstandard2.1로 맞추면, 여기서 TDD로 검증한 코드를
+    그대로 Unity 프로젝트(Assets/Scripts/Core)로 복사해 쓸 수 있다.
+  -->
+  <PropertyGroup>
+    <TargetFramework>netstandard2.1</TargetFramework>
+    <LangVersion>9.0</LangVersion>
+    <Nullable>disable</Nullable>
+    <ImplicitUsings>disable</ImplicitUsings>
+    <RootNamespace>Game.Core</RootNamespace>
+  </PropertyGroup>
+
+</Project>

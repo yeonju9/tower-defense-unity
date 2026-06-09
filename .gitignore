@@ -1,0 +1,17 @@
+# macOS
+.DS_Store
+
+# .NET 빌드 산출물 (core/의 csproj·sln 자체는 추적 — 필수 파일)
+**/bin/
+**/obj/
+*.user
+
+# Unity (다른 컴퓨터에서 프로젝트 생성 시 추가됨)
+# 주의: core/의 손수 작성한 .csproj/.sln은 추적해야 하므로 *.csproj/*.sln을 전역 무시하지 않는다.
+#       Unity 도입 시 Assembly-CSharp.csproj 등 자동생성물만 그때 별도로 무시 처리한다.
+/[Ll]ibrary/
+/[Tt]emp/
+/[Bb]uild/
+/[Bb]uilds/
+/[Ll]ogs/
+/[Uu]ser[Ss]ettings/

@@ -1,0 +1,4 @@
+# .NET 빌드 산출물 (standalone TDD 프로젝트)
+bin/
+obj/
+*.user
