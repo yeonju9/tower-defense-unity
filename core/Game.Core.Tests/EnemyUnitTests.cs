@@ -49,5 +49,15 @@ namespace Game.Tests.EditMode
             Assert.AreEqual(1.5f, enemy.Speed, 1e-4f);
             Assert.AreEqual(8, enemy.GoldReward);
         }
+
+        [Test]
+        public void MaxHp는_생성시_체력으로_고정되고_피해를_입어도_불변()
+        {
+            var enemy = new EnemyUnit(maxHp: 30, speed: 1.5f, goldReward: 8);
+            Assert.AreEqual(30, enemy.MaxHp);
+            enemy.TakeDamage(10);
+            Assert.AreEqual(20, enemy.Hp);
+            Assert.AreEqual(30, enemy.MaxHp); // 최대치는 그대로(체력바 분모용)
+        }
     }
 }

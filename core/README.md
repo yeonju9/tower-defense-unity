@@ -27,6 +27,7 @@ core/
 │   ├── SkillSettings.cs       스킬 3종 쿨다운·효과 수치(vision 기본값)
 │   ├── StarRating.cs          남은 라이프 → 별점(1~3)
 │   ├── SaveStore.cs           스테이지 클리어·최고별 저장(PlayerPrefs 비의존, 로드 검증)
+│   ├── ViewSnapshots.cs       화면 렌더용 읽기전용 스냅샷(EnemyView/TowerView)
 │   ├── GamePhase.cs           Ready→Playing→Won|Lost 상태기
 │   └── GameLoop.cs            위를 묶은 한 판 시뮬레이션 오케스트레이터
 └── Game.Core.Tests/    NUnit 테스트 (net10.0, NUnit 3.x — Unity Test Framework와 동일 계열)
@@ -50,7 +51,7 @@ cd core
 dotnet test
 ```
 
-현재 119개 테스트 통과(슬라이스 코어 + 판매·업그레이드·미리보기·보너스 + 상성 3축 + 멀티웨이브 + 스킬 3종 + 세이브).
+현재 127개 테스트 통과(슬라이스 코어 + 판매·업그레이드·미리보기·보너스 + 상성 3축 + 멀티웨이브 + 스킬 3종 + 세이브 + 뷰 스냅샷).
 
 ## Unity로 이식할 때
 

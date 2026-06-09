@@ -34,6 +34,7 @@ namespace Game.Core
         }
 
         public int Hp { get; private set; }
+        public int MaxHp { get; }
         public float Speed { get; }
         public int GoldReward { get; }
         public bool IsDead => Hp <= 0;
@@ -60,6 +61,7 @@ namespace Game.Core
             if (maxHp <= 0)
                 throw new ArgumentOutOfRangeException(nameof(maxHp), "최대 체력은 1 이상이어야 합니다.");
             Hp = maxHp;
+            MaxHp = maxHp;
             Speed = speed;
             GoldReward = goldReward;
         }

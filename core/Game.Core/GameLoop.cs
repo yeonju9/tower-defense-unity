@@ -64,6 +64,7 @@ namespace Game.Core
     {
         private sealed class ActiveEnemy
         {
+            public int Id;
             public EnemyUnit Unit;
             public PathTracker Tracker;
         }
@@ -88,6 +89,7 @@ namespace Game.Core
         private int currentWaveIndex;
         private bool waveInProgress;
         private float waveElapsed;
+        private int nextEnemyId; // 적 스폰마다 1씩 증가하는 안정적 식별자 발급기
         private WaveStartTimer prepTimer; // 웨이브 간 준비 카운트다운(조기 보너스). 사용 안 하면 null.
 
         // --- 스킬 3종 ---
@@ -121,6 +123,25 @@ namespace Game.Core
 
         /// <summary>현재 웨이브에서 아직 스폰되지 않은 적 미리보기(웨이브 미리보기 UI용).</summary>
         public IReadOnlyList<EnemySpec> UpcomingSpawns => CurrentWave.PeekRemaining();
+
+        /// <summary>현재 살아있는 적들의 렌더용 스냅샷(위치·체력·상태). Id로 프레임 간 매핑.</summary>
+        public IReadOnlyList<EnemyView> SnapshotEnemies()
+        {
+            var views = new List<EnemyView>(enemies.Count);
+            foreach (var e in enemies)
+                views.Add(new EnemyView(e.Id, e.Tracker.Position, e.Unit.Hp, e.Unit.MaxHp,
+                    e.Unit.IsSlowed, e.Unit.IsPoisoned));
+            return views;
+        }
+
+        /// <summary>배치된 타워들의 렌더용 스냅샷(위치·레벨·사거리).</summary>
+        public IReadOnlyList<TowerView> SnapshotTowers()
+        {
+            var views = new List<TowerView>(towers.Count);
+            foreach (var t in towers)
+                views.Add(new TowerView(t.Position, t.Unit.Level, t.Unit.Range, t.Unit.IsSplash));
+            return views;
+        }
 
         public GameLoop(GameLoopConfig config)
         {
@@ -349,6 +370,7 @@ namespace Game.Core
             {
                 enemies.Add(new ActiveEnemy
                 {
+                    Id = nextEnemyId++,
                     Unit = new EnemyUnit(spec),
                     Tracker = new PathTracker(waypoints),
                 });
