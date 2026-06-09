@@ -14,25 +14,34 @@ core/
 │   ├── Vec2.cs                좌표·거리 (Unity Vector 대체)
 │   ├── Economy.cs             골드
 │   ├── LifeSystem.cs          라이프
-│   ├── EnemyUnit.cs           적 체력·스탯 (+ EnemySpec)
-│   ├── TowerUnit.cs           타워 발사 쿨다운·수치·업그레이드·범위반경(SplashRadius)
+│   ├── EnemyUnit.cs           적 체력·스탯·상태이상(둔화/지속피해) (+ EnemySpec)
+│   ├── TowerUnit.cs           타워 발사 쿨다운·수치·업그레이드·범위반경·부가효과
+│   ├── TowerEffect.cs         명중 시 부가효과(둔화/지속피해) 정의
 │   ├── PathTracker.cs         경로 전진·도달
 │   ├── TargetSelector.cs      타깃 선정 (Select / SelectCandidate)
-│   ├── SplashResolver.cs      범위 피해(대포탑) 착탄 반경 내 다중 적 산출
+│   ├── SplashResolver.cs      범위 피해(대포탑·운석) 반경 내 다중 적 산출
 │   ├── WaveSchedule.cs        스폰 스케줄 (+ SpawnEntry, 미리보기 PeekRemaining)
 │   ├── Stage.cs               여러 WaveSchedule의 시퀀스(멀티 웨이브)
 │   ├── WaveStartTimer.cs      수동 웨이브 시작 + 조기 시작 보너스
+│   ├── Cooldown.cs            스킬 쿨다운 타이머
+│   ├── SkillSettings.cs       스킬 3종 쿨다운·효과 수치(vision 기본값)
+│   ├── StarRating.cs          남은 라이프 → 별점(1~3)
+│   ├── SaveStore.cs           스테이지 클리어·최고별 저장(PlayerPrefs 비의존, 로드 검증)
 │   ├── GamePhase.cs           Ready→Playing→Won|Lost 상태기
 │   └── GameLoop.cs            위를 묶은 한 판 시뮬레이션 오케스트레이터
-│                              (멀티 웨이브 진행·광역 공격·판매·업그레이드·조기보너스)
 └── Game.Core.Tests/    NUnit 테스트 (net10.0, NUnit 3.x — Unity Test Framework와 동일 계열)
 ```
 
 추가 기능(vision.md를 Core 로직으로 선구현):
 - 타워 판매/환불, 타워 업그레이드, 웨이브 미리보기
-- **첫 상성**: 광역 타워(대포탑) + 무리 적(군집 벌레) — 광역이 무리를 카운터함을 통합 테스트로 증명
+- **상성 3축**(통합 테스트로 카운터 관계 증명):
+  - 광역(대포탑) vs 무리(군집 벌레)
+  - 둔화(빙결탑) → 빠른 적(돌격병)을 묶어 화살탑이 더 잡게
+  - 지속피해(독탑) → 튼튼한 적(중장갑병)을 저격탑과 함께 깎아냄
 - **멀티 웨이브**: `Stage`로 여러 웨이브 순차 진행, 마지막 웨이브 클리어 시 승리
-- **조기 웨이브 보너스**: 웨이브 사이 준비단계에서 일찍 시작하면 남은 시간만큼 보너스 골드
+- **조기 웨이브 보너스**: 웨이브 사이 일찍 시작하면 남은 시간만큼 보너스 골드
+- **스킬 3종**: 운석 낙하(즉시 광역) / 시간 정지(적 정지) / 골드 러시(처치 골드 배수), 쿨다운 기반
+- **세이브**: 스테이지 클리어·별점 저장(순수 로직, 직렬화 문자열을 Unity가 PlayerPrefs로 영속화)
 
 ## 테스트 실행
 
@@ -41,7 +50,7 @@ cd core
 dotnet test
 ```
 
-현재 86개 테스트 통과(슬라이스 코어 46 + 판매·업그레이드·미리보기·보너스 24 + 첫 상성·멀티웨이브 16).
+현재 119개 테스트 통과(슬라이스 코어 + 판매·업그레이드·미리보기·보너스 + 상성 3축 + 멀티웨이브 + 스킬 3종 + 세이브).
 
 ## Unity로 이식할 때
 
