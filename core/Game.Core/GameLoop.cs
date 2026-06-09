@@ -20,6 +20,9 @@ namespace Game.Core
         /// <summary>조기 웨이브 시작 시 남은 준비시간 1초당 보너스 골드. WavePrepDuration이 0이면 무의미.</summary>
         public int EarlyBonusPerSecond { get; }
 
+        /// <summary>스킬 3종 설정. null이면 기본값(vision 기준).</summary>
+        public SkillSettings Skills { get; }
+
         /// <summary>단일 웨이브 설정(기존 호환). 내부적으로 1개짜리 Stage로 감싼다.</summary>
         public GameLoopConfig(IReadOnlyList<Vec2> waypoints, int startingGold, int startingLives, WaveSchedule schedule,
             float refundRatio = 0.6f)
@@ -30,7 +33,8 @@ namespace Game.Core
 
         /// <summary>멀티 웨이브 설정.</summary>
         public GameLoopConfig(IReadOnlyList<Vec2> waypoints, int startingGold, int startingLives, Stage stage,
-            float refundRatio = 0.6f, float wavePrepDuration = 0f, int earlyBonusPerSecond = 0)
+            float refundRatio = 0.6f, float wavePrepDuration = 0f, int earlyBonusPerSecond = 0,
+            SkillSettings skills = null)
         {
             Waypoints = waypoints ?? throw new ArgumentNullException(nameof(waypoints));
             Stage = stage ?? throw new ArgumentNullException(nameof(stage));
@@ -45,6 +49,7 @@ namespace Game.Core
             RefundRatio = refundRatio;
             WavePrepDuration = wavePrepDuration;
             EarlyBonusPerSecond = earlyBonusPerSecond;
+            Skills = skills ?? SkillSettings.Default;
         }
     }
 
@@ -85,6 +90,14 @@ namespace Game.Core
         private float waveElapsed;
         private WaveStartTimer prepTimer; // 웨이브 간 준비 카운트다운(조기 보너스). 사용 안 하면 null.
 
+        // --- 스킬 3종 ---
+        private readonly SkillSettings skills;
+        private readonly Cooldown meteorCd;
+        private readonly Cooldown timeStopCd;
+        private readonly Cooldown goldRushCd;
+        private float freezeRemaining;    // 시간 정지 잔여(>0이면 적 정지)
+        private float goldRushRemaining;  // 골드 러시 잔여(>0이면 처치 골드 배수)
+
         public Economy Economy { get; }
         public LifeSystem Life { get; }
         public GamePhase Phase { get; } = new GamePhase();
@@ -123,7 +136,19 @@ namespace Game.Core
             currentWaveIndex = 0;
             waveInProgress = false;
             waveElapsed = 0f;
+
+            skills = config.Skills;
+            meteorCd = new Cooldown(skills.MeteorCooldown);
+            timeStopCd = new Cooldown(skills.TimeStopCooldown);
+            goldRushCd = new Cooldown(skills.GoldRushCooldown);
         }
+
+        // --- 스킬 상태 조회 (UI/테스트용) ---
+        public bool MeteorReady => meteorCd.IsReady && Phase.Current == global::Game.Core.Phase.Playing;
+        public bool TimeStopReady => timeStopCd.IsReady && Phase.Current == global::Game.Core.Phase.Playing;
+        public bool GoldRushReady => goldRushCd.IsReady && Phase.Current == global::Game.Core.Phase.Playing;
+        public bool IsTimeStopped => freezeRemaining > 0f;
+        public bool IsGoldRushActive => goldRushRemaining > 0f;
 
         /// <summary>골드를 차감하고 타워를 배치한다. 골드가 부족하면 배치하지 않고 false를 반환한다.</summary>
         public bool TryBuildTower(Vec2 position, int cost, TowerUnit tower)
@@ -210,6 +235,39 @@ namespace Game.Core
             waveElapsed = 0f;
         }
 
+        /// <summary>운석 낙하: 지정 범위에 즉시 광역 피해. 쿨다운 중이면 false.</summary>
+        public bool TryCastMeteor(Vec2 center)
+        {
+            if (!MeteorReady)
+                return false;
+            var affected = splashResolver.Resolve(center, skills.MeteorRadius, BuildCandidates());
+            foreach (var enemy in affected)
+                enemy.TakeDamage(skills.MeteorDamage);
+            meteorCd.Trigger();
+            CollectDeadAndReward();
+            return true;
+        }
+
+        /// <summary>시간 정지: 일정 시간 모든 적을 정지시킨다(타워는 계속 발사). 쿨다운 중이면 false.</summary>
+        public bool TryCastTimeStop()
+        {
+            if (!TimeStopReady)
+                return false;
+            freezeRemaining = skills.TimeStopDuration;
+            timeStopCd.Trigger();
+            return true;
+        }
+
+        /// <summary>골드 러시: 일정 시간 처치 골드를 배수로. 쿨다운 중이면 false.</summary>
+        public bool TryCastGoldRush()
+        {
+            if (!GoldRushReady)
+                return false;
+            goldRushRemaining = skills.GoldRushDuration;
+            goldRushCd.Trigger();
+            return true;
+        }
+
         /// <summary>한 스텝 진행. 전투 중이 아니면 아무 일도 하지 않는다.</summary>
         public void Update(float deltaTime)
         {
@@ -219,6 +277,8 @@ namespace Game.Core
             // 'Phase'는 GamePhase 인스턴스 프로퍼티명이라, 열거형 타입은 정규화해 참조한다.
             if (Phase.Current != global::Game.Core.Phase.Playing)
                 return;
+
+            TickSkillTimers(deltaTime); // 쿨다운 회복 + 시간정지/골드러시 지속시간 감소(준비 단계에서도 진행)
 
             if (!waveInProgress)
             {
@@ -237,9 +297,21 @@ namespace Game.Core
             SpawnDueEnemies();
             TickEnemyStatus(deltaTime);     // 독 지속피해 적용·둔화 감소
             CollectDeadAndReward();         // 독으로 죽은 적 정산
-            MoveEnemiesAndCountLeaks(deltaTime);
-            FireTowers(deltaTime);
+            if (!IsTimeStopped)             // 시간 정지 중에는 적이 이동하지 않는다
+                MoveEnemiesAndCountLeaks(deltaTime);
+            FireTowers(deltaTime);          // 정지 중에도 타워는 발사
             EvaluateEndConditions();
+        }
+
+        private void TickSkillTimers(float deltaTime)
+        {
+            meteorCd.Tick(deltaTime);
+            timeStopCd.Tick(deltaTime);
+            goldRushCd.Tick(deltaTime);
+            if (freezeRemaining > 0f)
+                freezeRemaining = Math.Max(0f, freezeRemaining - deltaTime);
+            if (goldRushRemaining > 0f)
+                goldRushRemaining = Math.Max(0f, goldRushRemaining - deltaTime);
         }
 
         private List<TargetSelector.Candidate> BuildCandidates()
@@ -256,14 +328,15 @@ namespace Game.Core
                 e.Unit.TickStatus(deltaTime);
         }
 
-        /// <summary>죽은 적에게 보상을 지급하고 목록에서 제거한다.</summary>
+        /// <summary>죽은 적에게 보상을 지급하고 목록에서 제거한다. 골드 러시 중이면 보상이 배수.</summary>
         private void CollectDeadAndReward()
         {
+            int multiplier = IsGoldRushActive ? skills.GoldRushMultiplier : 1;
             for (int i = enemies.Count - 1; i >= 0; i--)
             {
                 if (enemies[i].Unit.IsDead)
                 {
-                    Economy.AddKillReward(enemies[i].Unit.GoldReward);
+                    Economy.AddKillReward(enemies[i].Unit.GoldReward * multiplier);
                     KilledCount++;
                     enemies.RemoveAt(i);
                 }
