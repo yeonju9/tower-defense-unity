@@ -23,7 +23,7 @@ core/
 │   ├── ChainResolver.cs       체인 피해(번개탑) 인접 적으로 순차 점프 + 데미지 감쇠
 │   ├── WaveSchedule.cs        스폰 스케줄 (+ SpawnEntry, 미리보기 PeekRemaining)
 │   ├── EnemyCatalog.cs        적 6종 스탯 정의(보병·돌격병·군집벌레·중장갑병·질주기병·미니보스)
-│   ├── TowerCatalog.cs        타워 8종 스탯·효과·비용 정의(+ TowerSpec, CreateUnit)
+│   ├── TowerCatalog.cs        타워 8종 스탯·효과·비용·해금시점·업그레이드곡선(+ TowerSpec, UpgradePlan)
 │   ├── Stage.cs               여러 WaveSchedule의 시퀀스(멀티 웨이브)
 │   ├── StageCatalog.cs        스테이지 1~10 데이터(경로·웨이브) + StageDefinition
 │   ├── StageProgress.cs       스테이지 해금 규칙(SaveStore 기반, 이전 클리어 시 다음 해금)
@@ -52,6 +52,7 @@ core/
 - **골드탑(처치 보너스)**: 막타로 적을 죽이면 처치 보상에 더해 추가 골드 지급(경제 전략)
 - **적 6종 + 보스**: `EnemyCatalog`로 위협 유형별 스탯 정의, 미니 보스는 `BossActive`로 등장 감지
 - **타워 8종**: `TowerCatalog`로 8종 스탯·효과·비용을 데이터화(딜러/광역/유틸, `CreateUnit`로 전투 인스턴스)
+- **타워 해금·업그레이드 곡선**: `TowerSpec.UnlockStageIndex`(스테이지별 해금)·`UnlockedAt`(빌드 메뉴 필터)·`UpgradeFrom`(레벨별 비용·데미지 증가, 최대 레벨)
 - **타게팅 모드**: 타워별 조준 정책(선두/가장가까운/가장강한)을 `SetTowerTargetingAt`로 전환
 - **멀티 스테이지 데이터**: `StageCatalog`로 스테이지 1~10 경로·웨이브를 데이터화(`ToConfig`로 바로 플레이)
 - **스테이지 진행/해금**: `StageProgress`가 이전 스테이지 클리어 시 다음을 해금(스테이지 선택 화면용)
@@ -63,7 +64,7 @@ cd core
 dotnet test
 ```
 
-현재 188개 테스트 통과(슬라이스 코어 + 판매·업그레이드·미리보기·보너스 + 상성 3축 + 멀티웨이브 + 스킬 3종 + 세이브 + 뷰 스냅샷(보스·체인·타게팅 포함) + 번개탑·골드탑 + 적 6종·보스 + 타워 8종 + 타게팅 모드 + 스테이지 1~10 데이터·해금 + 카탈로그 정합성 E2E).
+현재 197개 테스트 통과(슬라이스 코어 + 판매·업그레이드·미리보기·보너스 + 상성 3축 + 멀티웨이브 + 스킬 3종 + 세이브 + 뷰 스냅샷(보스·체인·타게팅 포함) + 번개탑·골드탑 + 적 6종·보스 + 타워 8종·해금·업그레이드곡선 + 타게팅 모드 + 스테이지 1~10 데이터·해금 + 카탈로그 정합성 E2E).
 
 ## Unity로 이식할 때
 

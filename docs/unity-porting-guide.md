@@ -1,6 +1,6 @@
 # Unity 포팅 가이드
 
-> 이 문서는 `core/`의 검증된 순수 C# 로직(`Game.Core`, 188개 테스트 통과)을 **Unity 6 프로젝트로 옮겨 화면에 띄우는** 작업의 청사진이다.
+> 이 문서는 `core/`의 검증된 순수 C# 로직(`Game.Core`, 197개 테스트 통과)을 **Unity 6 프로젝트로 옮겨 화면에 띄우는** 작업의 청사진이다.
 > 다른 PC(Unity 설치된)에서 이 저장소를 `git clone`한 뒤, 이 문서만 보고 순서대로 따라가면 된다.
 > 설계 근거: `docs/vision.md`, `docs/tech-env.md`, `docs/stage1-vertical-slice.md`, `core/README.md`
 
@@ -18,16 +18,16 @@
 
 > **`GameLoop`이 모든 시뮬레이션의 단일 소스. MonoBehaviour는 (1) 매 프레임 `loop.Update(dt)` 호출, (2) 스냅샷을 읽어 GameObject를 배치/갱신, (3) 입력을 `loop`의 메서드로 전달.**
 
-이게 더 낫다 — 188개로 검증된 오케스트레이션을 **재구현하지 않고 그대로 재사용**한다. Model A로 가면 그 로직을 MonoBehaviour에 다시 짜야 하고, 그건 테스트 밖이다.
+이게 더 낫다 — 197개로 검증된 오케스트레이션을 **재구현하지 않고 그대로 재사용**한다. Model A로 가면 그 로직을 MonoBehaviour에 다시 짜야 하고, 그건 테스트 밖이다.
 
 ---
 
 ## 1. 이식 순서 체크리스트
 
-- [x] **Task 0** — Core에 뷰 스냅샷 API 추가 (§3). ✅ **완료**(이 PC에서 TDD로 구현). 이후 Core는 188 테스트까지 확장됨(타워 8종·적 6종·스테이지 1~10·해금·번개탑·골드탑·타게팅 모드·E2E).
+- [x] **Task 0** — Core에 뷰 스냅샷 API 추가 (§3). ✅ **완료**(이 PC에서 TDD로 구현). 이후 Core는 197 테스트까지 확장됨(타워 8종·적 6종·스테이지 1~10·해금·번개탑·골드탑·타게팅 모드·E2E).
 - [ ] **Task 1** — Unity 6 LTS + Android 모듈 설치, 2D(URP) 프로젝트 생성.
 - [ ] **Task 2** — `Game.Core/*.cs`를 `Assets/Scripts/Core/`로 복사, asmdef 구성 (§2).
-- [ ] **Task 3** — EditMode 테스트 이식 (§7). Unity Test Runner에서 188개 녹색 확인.
+- [ ] **Task 3** — EditMode 테스트 이식 (§7). Unity Test Runner에서 197개 녹색 확인.
 - [ ] **Task 4** — `GameDirector`(단일 매니저)로 `GameLoop` 구동 + 좌표/시간 어댑터 (§4, §5).
 - [ ] **Task 5** — 적/타워/총알 뷰 풀링 렌더 + HUD 바인딩 (§4). 보스·체인·타게팅은 스냅샷에 포함됨(§3.1).
 - [ ] **Task 6** — 입력(빌드/판매/업그레이드/스킬/타게팅 토글) 배선 (§4).
@@ -62,7 +62,7 @@ Assets/
 
 ## 3. 뷰 스냅샷 API (✅ Task 0 완료 — 이미 Core에 있음)
 
-화면이 매 프레임 각 적/타워를 그리려면 위치·체력·상태를 읽어야 한다. `GameLoop`에 **읽기 전용 투영**을 이미 추가해 두었다(additive, 현재 188 테스트). Unity 쪽은 아래 API를 **그대로 호출**하면 된다.
+화면이 매 프레임 각 적/타워를 그리려면 위치·체력·상태를 읽어야 한다. `GameLoop`에 **읽기 전용 투영**을 이미 추가해 두었다(additive, 현재 197 테스트). Unity 쪽은 아래 API를 **그대로 호출**하면 된다.
 
 **이미 구현된 것:**
 - `EnemyUnit.MaxHp` (체력바 분모)
@@ -96,7 +96,7 @@ IReadOnlyList<TowerView> SnapshotTowers();    // 배치된 타워들
 
 > 개별 적의 보스 여부는 `EnemyView.IsBoss`로, 판 전체의 "보스 등장 경고"는 `GameLoop.BossActive`로 — 둘 다 쓸 수 있다(전자는 렌더, 후자는 HUD 배너/BGM).
 >
-> 아직 노출 안 된 것: 타워의 **효과 종류 상세**(둔화/독/골드보너스 구분). `TowerView`엔 `IsSplash`/`IsChain`만 있다. 타워별 스프라이트를 효과까지 세분하려면 `TowerView`에 필드를 additive로 더하면 된다(기존 188 테스트 안 깨짐).
+> 아직 노출 안 된 것: 타워의 **효과 종류 상세**(둔화/독/골드보너스 구분). `TowerView`엔 `IsSplash`/`IsChain`만 있다. 타워별 스프라이트를 효과까지 세분하려면 `TowerView`에 필드를 additive로 더하면 된다(기존 197 테스트 안 깨짐).
 
 ---
 
@@ -176,14 +176,16 @@ void SyncEnemies()
 |------|------|
 | 빌드 지점 탭 | `var spec = TowerCatalog.Arrow; loop.TryBuildTower(corePos, spec.Cost, spec.CreateUnit())` → false면 "골드 부족" 피드백 |
 | 타워 탭 → 판매 | `int refund = loop.SellTowerAt(corePos)` (-1이면 없음) |
-| 타워 탭 → 업그레이드 | `loop.TryUpgradeTower(corePos, cost, +dmg, +range)` |
+| 타워 탭 → 업그레이드 | `var p = spec.UpgradeFrom(currentLevel); if (p != null) loop.TryUpgradeTower(corePos, p.Value.Cost, p.Value.AddedDamage, p.Value.AddedRange)` (null이면 최대 레벨) |
 | 타워 탭 → 타게팅 변경 | `loop.SetTowerTargetingAt(corePos, TargetingMode.Strongest)` (선두/가까운/강한 순환) |
 | 웨이브 시작 버튼 | `loop.StartWave()` |
 | 스킬 버튼 3종 | `loop.TryCastMeteor(targetPos)` / `loop.TryCastTimeStop()` / `loop.TryCastGoldRush()` |
 
 > 타워 식별은 **위치(Vec2) 기준**이다(`SellTowerAt`/`TryUpgradeTower`/`SetTowerTargetingAt`가 위치로 찾음). 빌드 지점 좌표를 그대로 키로 쓰면 깔끔하다.
 >
-> **타워 종류 = `TowerCatalog`의 8종**(`Arrow`/`Cannon`/`Frost`/`Sniper`/`RapidFire`/`Poison`/`Lightning`/`Gold`). 각 `TowerSpec`이 `Cost`와 `CreateUnit()`(스탯·효과·체인 포함)을 주므로 별도 `MakeTower` 팩토리가 필요 없다. 빌드 메뉴는 `TowerCatalog.All()`로 채운다.
+> **타워 종류 = `TowerCatalog`의 8종**(`Arrow`/`Cannon`/`Frost`/`Sniper`/`RapidFire`/`Poison`/`Lightning`/`Gold`). 각 `TowerSpec`이 `Cost`와 `CreateUnit()`(스탯·효과·체인 포함)을 주므로 별도 `MakeTower` 팩토리가 필요 없다.
+>
+> 빌드 메뉴는 현재 스테이지에 맞춰 `TowerCatalog.UnlockedAt(stageIndex)`로 채운다(해금 안 된 타워는 자물쇠). 업그레이드 비용·증가량은 `spec.UpgradeFrom(currentLevel)`이 곡선대로 산출하며, `null`이면 최대 레벨(`TowerSpec.MaxLevel`)이라 버튼을 비활성화한다.
 
 ### 4.4 HUD 바인딩(폴링)
 
@@ -275,7 +277,7 @@ public class StageData : ScriptableObject
 `Game.Core.Tests/*.cs`를 `Assets/Scripts/Tests/EditMode/`로 복사. Unity Test Framework도 **NUnit 3.x 기반**이라 `Assert.AreEqual` 등이 그대로 동작한다(이 점 때문에 standalone도 NUnit 3.x로 맞춰둠).
 
 - EditMode 테스트 asmdef가 `Game.Core`를 참조하게.
-- Test Runner(Window → General → Test Runner)에서 **188개 녹색** 확인 → Core 이식이 성공했다는 첫 증거.
+- Test Runner(Window → General → Test Runner)에서 **197개 녹색** 확인 → Core 이식이 성공했다는 첫 증거.
 - PlayMode 스모크 테스트는 §4 완성 후 "타워가 실제로 적을 처치" 정도만 추가(슬라이스 범위).
 
 ---
