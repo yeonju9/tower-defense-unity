@@ -82,6 +82,28 @@ namespace Game.Tests.EditMode
             Assert.IsTrue(loop.SnapshotEnemies()[0].IsSlowed);
         }
 
+        [Test]
+        public void SnapshotEnemies_보스여부가_플래그로_보인다()
+        {
+            var loop = LoopWith(new WaveSchedule(new List<SpawnEntry>
+            {
+                new SpawnEntry(0f, Bug()),                 // 일반 적
+                new SpawnEntry(0f, EnemyCatalog.MiniBoss), // 보스
+            }));
+            loop.StartWave();
+            loop.Update(0.01f); // 둘 다 스폰
+
+            bool sawBoss = false;
+            bool sawNormal = false;
+            foreach (var e in loop.SnapshotEnemies())
+            {
+                if (e.IsBoss) sawBoss = true;
+                else sawNormal = true;
+            }
+            Assert.IsTrue(sawBoss, "보스가 IsBoss=true로 보여야 한다");
+            Assert.IsTrue(sawNormal, "일반 적은 IsBoss=false여야 한다");
+        }
+
         // --- 타워 스냅샷 ---
 
         [Test]
@@ -109,6 +131,37 @@ namespace Game.Tests.EditMode
             var snap = loop.SnapshotTowers()[0];
             Assert.AreEqual(2, snap.Level);
             Assert.AreEqual(3.0f, snap.Range, 1e-4f);
+        }
+
+        [Test]
+        public void SnapshotTowers_체인여부가_플래그로_보인다()
+        {
+            var loop = LoopWith(new WaveSchedule(new List<SpawnEntry>()));
+            loop.TryBuildTower(new Vec2(1f, 1f), 0, TowerCatalog.Lightning.CreateUnit()); // 번개탑
+            loop.TryBuildTower(new Vec2(2f, 2f), 0, TowerCatalog.Arrow.CreateUnit());     // 화살탑
+
+            TowerView lightning = default;
+            TowerView arrow = default;
+            foreach (var t in loop.SnapshotTowers())
+            {
+                if (t.Position.X > 1.5f) arrow = t;
+                else lightning = t;
+            }
+            Assert.IsTrue(lightning.IsChain);
+            Assert.IsFalse(arrow.IsChain);
+        }
+
+        [Test]
+        public void SnapshotTowers_타게팅_모드가_보이고_변경이_반영된다()
+        {
+            var loop = LoopWith(new WaveSchedule(new List<SpawnEntry>()));
+            var pos = new Vec2(1f, 1f);
+            loop.TryBuildTower(pos, 0, new TowerUnit(range: 2.5f, fireInterval: 0.8f, damage: 10));
+
+            Assert.AreEqual(TargetingMode.First, loop.SnapshotTowers()[0].Targeting); // 기본
+
+            loop.SetTowerTargetingAt(pos, TargetingMode.Strongest);
+            Assert.AreEqual(TargetingMode.Strongest, loop.SnapshotTowers()[0].Targeting);
         }
     }
 }

@@ -143,7 +143,7 @@ namespace Game.Core
             var views = new List<EnemyView>(enemies.Count);
             foreach (var e in enemies)
                 views.Add(new EnemyView(e.Id, e.Tracker.Position, e.Unit.Hp, e.Unit.MaxHp,
-                    e.Unit.IsSlowed, e.Unit.IsPoisoned));
+                    e.Unit.IsSlowed, e.Unit.IsPoisoned, e.Unit.IsBoss));
             return views;
         }
 
@@ -152,7 +152,8 @@ namespace Game.Core
         {
             var views = new List<TowerView>(towers.Count);
             foreach (var t in towers)
-                views.Add(new TowerView(t.Position, t.Unit.Level, t.Unit.Range, t.Unit.IsSplash));
+                views.Add(new TowerView(t.Position, t.Unit.Level, t.Unit.Range, t.Unit.IsSplash,
+                    t.Unit.IsChain, t.Unit.Targeting));
             return views;
         }
 

@@ -13,8 +13,10 @@ namespace Game.Core
         public int MaxHp { get; }
         public bool IsSlowed { get; }
         public bool IsPoisoned { get; }
+        public bool IsBoss { get; }   // 보스 스프라이트·크기·등장 연출 구분용
 
-        public EnemyView(int id, Vec2 position, int hp, int maxHp, bool isSlowed, bool isPoisoned)
+        public EnemyView(int id, Vec2 position, int hp, int maxHp, bool isSlowed, bool isPoisoned,
+            bool isBoss)
         {
             Id = id;
             Position = position;
@@ -22,6 +24,7 @@ namespace Game.Core
             MaxHp = maxHp;
             IsSlowed = isSlowed;
             IsPoisoned = isPoisoned;
+            IsBoss = isBoss;
         }
     }
 
@@ -32,13 +35,18 @@ namespace Game.Core
         public int Level { get; }
         public float Range { get; }
         public bool IsSplash { get; }
+        public bool IsChain { get; }            // 번개탑 스프라이트·체인 이펙트 구분용
+        public TargetingMode Targeting { get; } // 선택 패널에 현재 조준 정책 표시용
 
-        public TowerView(Vec2 position, int level, float range, bool isSplash)
+        public TowerView(Vec2 position, int level, float range, bool isSplash, bool isChain,
+            TargetingMode targeting)
         {
             Position = position;
             Level = level;
             Range = range;
             IsSplash = isSplash;
+            IsChain = isChain;
+            Targeting = targeting;
         }
     }
 }
