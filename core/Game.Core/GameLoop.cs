@@ -218,6 +218,18 @@ namespace Game.Core
         }
 
         /// <summary>
+        /// 지정 위치의 타워의 타깃 우선순위를 바꾼다(플레이어 토글). 타워가 없으면 false.
+        /// </summary>
+        public bool SetTowerTargetingAt(Vec2 position, TargetingMode mode)
+        {
+            var tower = towers.Find(t => t.Position.Equals(position));
+            if (tower == null)
+                return false;
+            tower.Unit.SetTargeting(mode);
+            return true;
+        }
+
+        /// <summary>
         /// 지정 위치의 타워를 업그레이드한다. 골드를 차감하고 데미지·사거리를 올린다.
         /// 해당 위치에 타워가 없거나 골드가 부족하면 false를 반환하고 아무 변화도 없다.
         /// </summary>
@@ -416,7 +428,8 @@ namespace Game.Core
                 if (!tower.Unit.CanFire)
                     continue;
 
-                var picked = selector.SelectCandidate(tower.Position, tower.Unit.Range, candidates);
+                var picked = selector.SelectCandidate(tower.Position, tower.Unit.Range, candidates,
+                    tower.Unit.Targeting);
                 if (picked == null)
                     continue;
 

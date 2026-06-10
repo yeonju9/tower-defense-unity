@@ -32,12 +32,42 @@ namespace Game.Core.Tests
         }
 
         [Test]
-        public void All은_구현된_스테이지를_순서대로_반환한다()
+        public void All은_스테이지_10종을_순서대로_반환한다()
         {
             var all = StageCatalog.All();
-            Assert.AreEqual(3, all.Count);
+            Assert.AreEqual(10, all.Count);
             Assert.AreEqual("1. 직선 길", all[0].Name);
-            Assert.AreEqual("3. L자 길", all[2].Name);
+            Assert.AreEqual("10. 최종 결전", all[9].Name);
+        }
+
+        [Test]
+        public void 모든_스테이지는_경로_2점이상_웨이브_1개이상으로_유효하다()
+        {
+            foreach (var s in StageCatalog.All())
+            {
+                Assert.GreaterOrEqual(s.Waypoints.Count, 2, s.Name);
+                Assert.GreaterOrEqual(s.Stage.WaveCount, 1, s.Name);
+                Assert.Greater(s.StartingGold, 0, s.Name);
+                Assert.Greater(s.StartingLives, 0, s.Name);
+            }
+        }
+
+        [Test]
+        public void 후반_스테이지일수록_시작_라이프가_줄어드는_경향이다()
+        {
+            // 난이도 곡선: 1스테이지가 10스테이지보다 라이프 여유가 많다.
+            Assert.Greater(StageCatalog.Stage1().StartingLives, StageCatalog.Stage10().StartingLives);
+        }
+
+        [Test]
+        public void 최종_스테이지에는_보스가_등장한다()
+        {
+            bool hasBoss = false;
+            foreach (var wave in StageCatalog.Stage10().Stage.Waves)
+                foreach (var spec in wave.PeekRemaining())
+                    if (spec.IsBoss)
+                        hasBoss = true;
+            Assert.IsTrue(hasBoss);
         }
 
         [Test]

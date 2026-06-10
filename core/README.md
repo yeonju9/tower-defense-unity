@@ -18,13 +18,15 @@ core/
 │   ├── TowerUnit.cs           타워 발사 쿨다운·수치·업그레이드·범위반경·부가효과·체인(+ ChainSpec)
 │   ├── TowerEffect.cs         명중 시 부가효과(둔화/지속피해/처치보너스골드) 정의
 │   ├── PathTracker.cs         경로 전진·도달
-│   ├── TargetSelector.cs      타깃 선정 (Select / SelectCandidate)
+│   ├── TargetSelector.cs      타깃 선정 (Select / SelectCandidate) + 타게팅 모드(선두/가까운/강한)
 │   ├── SplashResolver.cs      범위 피해(대포탑·운석) 반경 내 다중 적 산출
 │   ├── ChainResolver.cs       체인 피해(번개탑) 인접 적으로 순차 점프 + 데미지 감쇠
 │   ├── WaveSchedule.cs        스폰 스케줄 (+ SpawnEntry, 미리보기 PeekRemaining)
 │   ├── EnemyCatalog.cs        적 6종 스탯 정의(보병·돌격병·군집벌레·중장갑병·질주기병·미니보스)
+│   ├── TowerCatalog.cs        타워 8종 스탯·효과·비용 정의(+ TowerSpec, CreateUnit)
 │   ├── Stage.cs               여러 WaveSchedule의 시퀀스(멀티 웨이브)
-│   ├── StageCatalog.cs        스테이지 1~3 데이터(경로·웨이브) + StageDefinition
+│   ├── StageCatalog.cs        스테이지 1~10 데이터(경로·웨이브) + StageDefinition
+│   ├── StageProgress.cs       스테이지 해금 규칙(SaveStore 기반, 이전 클리어 시 다음 해금)
 │   ├── WaveStartTimer.cs      수동 웨이브 시작 + 조기 시작 보너스
 │   ├── Cooldown.cs            스킬 쿨다운 타이머
 │   ├── SkillSettings.cs       스킬 3종 쿨다운·효과 수치(vision 기본값)
@@ -49,7 +51,10 @@ core/
 - **번개탑(체인 타격)**: 한 발이 인접 적으로 순차 점프하며 점프마다 데미지 감쇠(일렬 무리 적 카운터)
 - **골드탑(처치 보너스)**: 막타로 적을 죽이면 처치 보상에 더해 추가 골드 지급(경제 전략)
 - **적 6종 + 보스**: `EnemyCatalog`로 위협 유형별 스탯 정의, 미니 보스는 `BossActive`로 등장 감지
-- **멀티 스테이지 데이터**: `StageCatalog`로 스테이지 1~3 경로·웨이브를 데이터화(`ToConfig`로 바로 플레이)
+- **타워 8종**: `TowerCatalog`로 8종 스탯·효과·비용을 데이터화(딜러/광역/유틸, `CreateUnit`로 전투 인스턴스)
+- **타게팅 모드**: 타워별 조준 정책(선두/가장가까운/가장강한)을 `SetTowerTargetingAt`로 전환
+- **멀티 스테이지 데이터**: `StageCatalog`로 스테이지 1~10 경로·웨이브를 데이터화(`ToConfig`로 바로 플레이)
+- **스테이지 진행/해금**: `StageProgress`가 이전 스테이지 클리어 시 다음을 해금(스테이지 선택 화면용)
 
 ## 테스트 실행
 
@@ -58,7 +63,7 @@ cd core
 dotnet test
 ```
 
-현재 155개 테스트 통과(슬라이스 코어 + 판매·업그레이드·미리보기·보너스 + 상성 3축 + 멀티웨이브 + 스킬 3종 + 세이브 + 뷰 스냅샷 + 번개탑·골드탑 + 적 6종·보스 + 멀티 스테이지 데이터).
+현재 181개 테스트 통과(슬라이스 코어 + 판매·업그레이드·미리보기·보너스 + 상성 3축 + 멀티웨이브 + 스킬 3종 + 세이브 + 뷰 스냅샷 + 번개탑·골드탑 + 적 6종·보스 + 타워 8종 + 타게팅 모드 + 스테이지 1~10 데이터·해금).
 
 ## Unity로 이식할 때
 

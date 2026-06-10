@@ -45,6 +45,9 @@ namespace Game.Core
         /// <summary>체인 타격 타워인지(번개탑).</summary>
         public bool IsChain => Chain.IsChain;
 
+        /// <summary>타깃 우선순위 정책. 기본은 선두(First). 플레이어가 SetTargeting으로 바꾼다.</summary>
+        public TargetingMode Targeting { get; private set; } = TargetingMode.First;
+
         /// <summary>업그레이드 레벨. 1부터 시작하며 Upgrade마다 1씩 오른다.</summary>
         public int Level { get; private set; } = 1;
 
@@ -86,6 +89,12 @@ namespace Game.Core
         public void OnFired()
         {
             cooldownRemaining = FireInterval;
+        }
+
+        /// <summary>타깃 우선순위 정책을 바꾼다(플레이어 토글).</summary>
+        public void SetTargeting(TargetingMode mode)
+        {
+            Targeting = mode;
         }
 
         /// <summary>데미지·사거리를 올리고 레벨을 1 증가시킨다. 증가량은 음수일 수 없다.</summary>
