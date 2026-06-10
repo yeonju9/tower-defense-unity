@@ -9,8 +9,9 @@ namespace Game.Core
         public int MaxHp { get; }
         public float Speed { get; }
         public int GoldReward { get; }
+        public bool IsBoss { get; }
 
-        public EnemySpec(int maxHp, float speed, int goldReward)
+        public EnemySpec(int maxHp, float speed, int goldReward, bool isBoss = false)
         {
             if (maxHp <= 0)
                 throw new ArgumentOutOfRangeException(nameof(maxHp), "최대 체력은 1 이상이어야 합니다.");
@@ -21,6 +22,7 @@ namespace Game.Core
             MaxHp = maxHp;
             Speed = speed;
             GoldReward = goldReward;
+            IsBoss = isBoss;
         }
     }
 
@@ -37,6 +39,7 @@ namespace Game.Core
         public int MaxHp { get; }
         public float Speed { get; }
         public int GoldReward { get; }
+        public bool IsBoss { get; }
         public bool IsDead => Hp <= 0;
 
         // --- 둔화(빙결탑) 상태 ---
@@ -56,7 +59,7 @@ namespace Game.Core
         /// <summary>현재 중독 상태인지(테스트·UI용).</summary>
         public bool IsPoisoned => poisonStacks.Count > 0;
 
-        public EnemyUnit(int maxHp, float speed, int goldReward)
+        public EnemyUnit(int maxHp, float speed, int goldReward, bool isBoss = false)
         {
             if (maxHp <= 0)
                 throw new ArgumentOutOfRangeException(nameof(maxHp), "최대 체력은 1 이상이어야 합니다.");
@@ -64,10 +67,11 @@ namespace Game.Core
             MaxHp = maxHp;
             Speed = speed;
             GoldReward = goldReward;
+            IsBoss = isBoss;
         }
 
         public EnemyUnit(EnemySpec spec)
-            : this(spec.MaxHp, spec.Speed, spec.GoldReward) { }
+            : this(spec.MaxHp, spec.Speed, spec.GoldReward, spec.IsBoss) { }
 
         /// <summary>피해를 입는다. 체력은 0 미만으로 내려가지 않으며, 이미 죽었으면 무시한다.</summary>
         public void TakeDamage(int amount)

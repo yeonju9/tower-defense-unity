@@ -14,14 +14,17 @@ core/
 │   ├── Vec2.cs                좌표·거리 (Unity Vector 대체)
 │   ├── Economy.cs             골드
 │   ├── LifeSystem.cs          라이프
-│   ├── EnemyUnit.cs           적 체력·스탯·상태이상(둔화/지속피해) (+ EnemySpec)
-│   ├── TowerUnit.cs           타워 발사 쿨다운·수치·업그레이드·범위반경·부가효과
-│   ├── TowerEffect.cs         명중 시 부가효과(둔화/지속피해) 정의
+│   ├── EnemyUnit.cs           적 체력·스탯·상태이상(둔화/지속피해)·보스플래그 (+ EnemySpec)
+│   ├── TowerUnit.cs           타워 발사 쿨다운·수치·업그레이드·범위반경·부가효과·체인(+ ChainSpec)
+│   ├── TowerEffect.cs         명중 시 부가효과(둔화/지속피해/처치보너스골드) 정의
 │   ├── PathTracker.cs         경로 전진·도달
 │   ├── TargetSelector.cs      타깃 선정 (Select / SelectCandidate)
 │   ├── SplashResolver.cs      범위 피해(대포탑·운석) 반경 내 다중 적 산출
+│   ├── ChainResolver.cs       체인 피해(번개탑) 인접 적으로 순차 점프 + 데미지 감쇠
 │   ├── WaveSchedule.cs        스폰 스케줄 (+ SpawnEntry, 미리보기 PeekRemaining)
+│   ├── EnemyCatalog.cs        적 6종 스탯 정의(보병·돌격병·군집벌레·중장갑병·질주기병·미니보스)
 │   ├── Stage.cs               여러 WaveSchedule의 시퀀스(멀티 웨이브)
+│   ├── StageCatalog.cs        스테이지 1~3 데이터(경로·웨이브) + StageDefinition
 │   ├── WaveStartTimer.cs      수동 웨이브 시작 + 조기 시작 보너스
 │   ├── Cooldown.cs            스킬 쿨다운 타이머
 │   ├── SkillSettings.cs       스킬 3종 쿨다운·효과 수치(vision 기본값)
@@ -43,6 +46,10 @@ core/
 - **조기 웨이브 보너스**: 웨이브 사이 일찍 시작하면 남은 시간만큼 보너스 골드
 - **스킬 3종**: 운석 낙하(즉시 광역) / 시간 정지(적 정지) / 골드 러시(처치 골드 배수), 쿨다운 기반
 - **세이브**: 스테이지 클리어·별점 저장(순수 로직, 직렬화 문자열을 Unity가 PlayerPrefs로 영속화)
+- **번개탑(체인 타격)**: 한 발이 인접 적으로 순차 점프하며 점프마다 데미지 감쇠(일렬 무리 적 카운터)
+- **골드탑(처치 보너스)**: 막타로 적을 죽이면 처치 보상에 더해 추가 골드 지급(경제 전략)
+- **적 6종 + 보스**: `EnemyCatalog`로 위협 유형별 스탯 정의, 미니 보스는 `BossActive`로 등장 감지
+- **멀티 스테이지 데이터**: `StageCatalog`로 스테이지 1~3 경로·웨이브를 데이터화(`ToConfig`로 바로 플레이)
 
 ## 테스트 실행
 
@@ -51,7 +58,7 @@ cd core
 dotnet test
 ```
 
-현재 127개 테스트 통과(슬라이스 코어 + 판매·업그레이드·미리보기·보너스 + 상성 3축 + 멀티웨이브 + 스킬 3종 + 세이브 + 뷰 스냅샷).
+현재 155개 테스트 통과(슬라이스 코어 + 판매·업그레이드·미리보기·보너스 + 상성 3축 + 멀티웨이브 + 스킬 3종 + 세이브 + 뷰 스냅샷 + 번개탑·골드탑 + 적 6종·보스 + 멀티 스테이지 데이터).
 
 ## Unity로 이식할 때
 

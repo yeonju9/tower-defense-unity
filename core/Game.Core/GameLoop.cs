@@ -83,6 +83,7 @@ namespace Game.Core
         private readonly int earlyBonusPerSecond;
         private readonly TargetSelector selector = new TargetSelector();
         private readonly SplashResolver splashResolver = new SplashResolver();
+        private readonly ChainResolver chainResolver = new ChainResolver();
         private readonly List<ActiveEnemy> enemies = new List<ActiveEnemy>();
         private readonly List<PlacedTower> towers = new List<PlacedTower>();
 
@@ -106,6 +107,18 @@ namespace Game.Core
 
         public int ActiveEnemyCount => enemies.Count;
         public int TowerCount => towers.Count;
+
+        /// <summary>현재 필드에 살아있는 보스가 있는지(보스 등장 경고 UI·BGM 전환용).</summary>
+        public bool BossActive
+        {
+            get
+            {
+                foreach (var e in enemies)
+                    if (e.Unit.IsBoss)
+                        return true;
+                return false;
+            }
+        }
         public int KilledCount { get; private set; }
         public int LeakedCount { get; private set; }
 
@@ -407,24 +420,52 @@ namespace Game.Core
                 if (picked == null)
                     continue;
 
-                // 단일 타깃이면 그 적만, 광역(대포탑)이면 착탄점 반경 내 모든 적이 피격 대상.
-                IReadOnlyList<EnemyUnit> hitUnits = tower.Unit.IsSplash
-                    ? splashResolver.Resolve(picked.Value.Position, tower.Unit.SplashRadius, candidates)
-                    : new[] { picked.Value.Unit };
-
                 var effect = tower.Unit.Effect;
-                foreach (var enemy in hitUnits)
+                if (tower.Unit.IsChain)
                 {
-                    enemy.TakeDamage(tower.Unit.Damage);
-                    if (effect.AppliesSlow)
-                        enemy.ApplySlow(effect.SlowFactor, effect.SlowDuration);
-                    if (effect.AppliesPoison)
-                        enemy.ApplyPoison(effect.PoisonDps, effect.PoisonDuration);
+                    // 번개탑: 시작 적에서 인접 적으로 순차 점프하며 적마다 감쇠된 데미지를 입힌다.
+                    var spec = tower.Unit.Chain;
+                    var chainHits = chainResolver.Resolve(picked.Value, tower.Unit.Damage,
+                        spec.MaxTargets, spec.JumpRange, spec.Falloff, candidates);
+                    foreach (var h in chainHits)
+                        HitEnemy(h.Unit, h.Damage, effect);
+                }
+                else
+                {
+                    // 단일 타깃이면 그 적만, 광역(대포탑)이면 착탄점 반경 내 모든 적이 피격 대상.
+                    IReadOnlyList<EnemyUnit> hitUnits = tower.Unit.IsSplash
+                        ? splashResolver.Resolve(picked.Value.Position, tower.Unit.SplashRadius, candidates)
+                        : new[] { picked.Value.Unit };
+
+                    foreach (var enemy in hitUnits)
+                        HitEnemy(enemy, tower.Unit.Damage, effect);
                 }
                 tower.Unit.OnFired();
             }
 
             CollectDeadAndReward();
+        }
+
+        /// <summary>
+        /// 한 적에게 데미지·부가효과를 적용한다. 이 타격이 막타(살아있던 적을 죽임)이고
+        /// 타워가 처치 보너스(골드탑)를 가졌으면 추가 골드를 지급한다.
+        /// </summary>
+        private void HitEnemy(EnemyUnit enemy, int damage, TowerEffect effect)
+        {
+            bool wasAlive = !enemy.IsDead;
+            enemy.TakeDamage(damage);
+            ApplyEffect(enemy, effect);
+            if (wasAlive && enemy.IsDead && effect.AppliesKillBonus)
+                Economy.AddBonus(effect.KillBonusGold);
+        }
+
+        /// <summary>명중 시 부가효과(둔화/지속피해)를 적에게 건다.</summary>
+        private static void ApplyEffect(EnemyUnit enemy, TowerEffect effect)
+        {
+            if (effect.AppliesSlow)
+                enemy.ApplySlow(effect.SlowFactor, effect.SlowDuration);
+            if (effect.AppliesPoison)
+                enemy.ApplyPoison(effect.PoisonDps, effect.PoisonDuration);
         }
 
         private void EvaluateEndConditions()

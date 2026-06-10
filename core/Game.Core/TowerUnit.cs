@@ -2,6 +2,27 @@ using System;
 
 namespace Game.Core
 {
+    /// <summary>
+    /// 체인(번개탑) 타격 정의. 기본값(default)은 '체인 아님'이라 기존 타워는 신경 쓰지 않아도 된다.
+    /// MaxTargets는 시작 적을 포함한 최대 타격 수, JumpRange는 점프 허용 거리, Falloff는 점프당 데미지 비율.
+    /// </summary>
+    public readonly struct ChainSpec
+    {
+        public int MaxTargets { get; }
+        public float JumpRange { get; }
+        public float Falloff { get; }
+
+        public ChainSpec(int maxTargets, float jumpRange, float falloff)
+        {
+            MaxTargets = maxTargets;
+            JumpRange = jumpRange;
+            Falloff = falloff;
+        }
+
+        /// <summary>2명 이상 타격 + 점프거리·감쇠가 유효할 때만 체인으로 동작.</summary>
+        public bool IsChain => MaxTargets > 1 && JumpRange > 0f && Falloff > 0f && Falloff <= 1f;
+    }
+
     /// <summary>한 타워의 발사 타이밍(쿨다운)과 전투 수치(사거리·데미지) 보유.</summary>
     public class TowerUnit
     {
@@ -18,6 +39,12 @@ namespace Game.Core
         /// <summary>명중 시 거는 부가 효과(둔화/지속피해). 기본은 효과 없음.</summary>
         public TowerEffect Effect { get; }
 
+        /// <summary>체인(번개탑) 정의. 기본은 체인 아님(단일/광역).</summary>
+        public ChainSpec Chain { get; }
+
+        /// <summary>체인 타격 타워인지(번개탑).</summary>
+        public bool IsChain => Chain.IsChain;
+
         /// <summary>업그레이드 레벨. 1부터 시작하며 Upgrade마다 1씩 오른다.</summary>
         public int Level { get; private set; } = 1;
 
@@ -27,7 +54,7 @@ namespace Game.Core
         public bool CanFire => cooldownRemaining <= 0f;
 
         public TowerUnit(float range, float fireInterval, int damage, float splashRadius = 0f,
-            TowerEffect effect = default)
+            TowerEffect effect = default, ChainSpec chain = default)
         {
             if (range <= 0f)
                 throw new ArgumentOutOfRangeException(nameof(range), "사거리는 0보다 커야 합니다.");
@@ -42,6 +69,7 @@ namespace Game.Core
             Damage = damage;
             SplashRadius = splashRadius;
             Effect = effect;
+            Chain = chain;
             cooldownRemaining = 0f; // 시작 즉시 발사 가능
         }
 
